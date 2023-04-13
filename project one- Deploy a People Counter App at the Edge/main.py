@@ -340,9 +340,9 @@ def infer_on_stream(args, client):
     ### TODO: Load the model through `infer_network` ###
     try:
         infer_network.load_model(
-        model_xml=args.model,
-        device=args.device,
-        cpu_extension=args.cpu_extension if args.cpu_extension else None,
+            model_xml=args.model,
+            device=args.device,
+            cpu_extension=args.cpu_extension or None,
         )
     except Exception:
         logger.exception("Failed to load the model")

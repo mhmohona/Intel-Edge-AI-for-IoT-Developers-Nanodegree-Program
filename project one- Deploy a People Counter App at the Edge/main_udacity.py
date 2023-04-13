@@ -328,16 +328,16 @@ def infer_on_stream(args, client):
     ### TODO: Load the model through `infer_network` ###
     try:
         infer_network.load_model(
-        model_xml=args.model,
-        device=args.device,
-        cpu_extension=args.cpu_extension if args.cpu_extension else None,
+            model_xml=args.model,
+            device=args.device,
+            cpu_extension=args.cpu_extension or None,
         )
     except Exception:
         print("Failed to load the model")
         raise
     video_file = args.input
     writer = None
-    print("Processing video: {}...".format(video_file))
+    print(f"Processing video: {video_file}...")
     stream = cv2.VideoCapture(video_file)
     stream.open(video_file)
 

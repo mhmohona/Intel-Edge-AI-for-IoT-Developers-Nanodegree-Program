@@ -61,7 +61,7 @@ class Network:
         """
         ### TODO: Load the model ###
         # https://docs.openvinotoolkit.org/latest/ie_python_api/classie__api_1_1IENetwork.html
-        model_bin = os.path.splitext(model_xml)[0] + ".bin"
+        model_bin = f"{os.path.splitext(model_xml)[0]}.bin"
         assert os.path.isfile(model_bin) and os.path.isfile(model_xml)
         self._model_size = os.stat(model_bin).st_size / 1024. ** 2
 
@@ -83,15 +83,10 @@ class Network:
         supported_layers = self.ie_core.query_network(
             network=self.network, device_name=device
         )
-        # Check for any unsupported layers, and let the user know if anything is missing.
-        unsupported_layers = [
+        if unsupported_layers := [
             l for l in self.network.layers.keys() if l not in supported_layers
-        ]
-        if len(unsupported_layers) != 0:
-            msg = (
-                "Unsupported layers found: {}, Check whether extensions are available "
-                "to add to IECore.".format(unsupported_layers)
-            )
+        ]:
+            msg = f"Unsupported layers found: {unsupported_layers}, Check whether extensions are available to add to IECore."
             raise RuntimeError(msg)
 
         ### TODO: Add any necessary extensions ###
@@ -119,8 +114,7 @@ class Network:
 
     def wait(self, request_id: int = 0):
         """Checks the status of the inference request."""
-        status = self.exec_network.requests[request_id].wait(-1)
-        return status
+        return self.exec_network.requests[request_id].wait(-1)
 
     def get_output(self, request_id: int = 0):
         """Returns a list of the results for the output layer of the network."""

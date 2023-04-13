@@ -42,8 +42,7 @@ class Queue:
     def get_queues(self, image):
         for q in self.queues:
             x_min, y_min, x_max, y_max=q
-            frame=image[y_min:y_max, x_min:x_max]
-            yield frame
+            yield image[y_min:y_max, x_min:x_max]
     
     def check_coords(self, coords):
         d={k+1:0 for k in range(len(self.queues))}
@@ -60,8 +59,8 @@ class PersonDetect:
     '''
 
     def __init__(self, model_name, device, threshold=0.60):
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
+        self.model_weights = f'{model_name}.bin'
+        self.model_structure = f'{model_name}.xml'
         self.device=device
         self.threshold=threshold
 
@@ -115,10 +114,9 @@ class PersonDetect:
         """
         boxes = []
         probs = outputs[0, 0, :, 2]
-        for i, p in enumerate(probs):
-            if p > self.threshold:
-                box = outputs[0, 0, i, 3:]
-                boxes.append(box)
+        boxes.extend(
+            outputs[0, 0, i, 3:] for i, p in enumerate(probs) if p > self.threshold
+        )
         return boxes
 
     def preprocess_input(self, image):
@@ -145,7 +143,7 @@ def main(args):
     total_model_load_time = time.time() - start_model_load_time
 
     queue=Queue()
-    
+
     try:
         queue_param=np.load(args.queue_param)
         for q in queue_param:
@@ -156,16 +154,16 @@ def main(args):
     try:
         cap=cv2.VideoCapture(video_file)
     except FileNotFoundError:
-        print("Cannot locate video file: "+ video_file)
+        print(f"Cannot locate video file: {video_file}")
     except Exception as e:
         print("Something else went wrong with the video file: ", e)
-    
+
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     out_video = cv2.VideoWriter(os.path.join(output_path, 'output_video.mp4'), cv2.VideoWriter_fourcc(*'avc1'), fps, (initial_w, initial_h), True)
-    
+
     counter=0
     start_inference_time=time.time()
 
@@ -175,23 +173,23 @@ def main(args):
             if not ret:
                 break
             counter+=1
-            
+
             coords, image= pd.predict(frame)
             num_people= queue.check_coords(coords)
             print(f"Total People in frame = {len(coords)}")
             print(f"Number of people in queue = {num_people}")
             out_text=""
             y_pixel=25
-            
+
             for k, v in num_people.items():
                 out_text += f"No. of People in Queue {k} is {v} "
                 if v >= int(max_people):
-                    out_text += f" Queue full; Please move to next Queue "
+                    out_text += " Queue full; Please move to next Queue "
                 cv2.putText(image, out_text, (15, y_pixel), cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 0), 2)
                 out_text=""
                 y_pixel+=40
             out_video.write(image)
-            
+
         total_time=time.time()-start_inference_time
         total_inference_time=round(total_time, 1)
         fps=counter/total_inference_time
